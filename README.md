@@ -30,7 +30,8 @@ maritime-crossdomain/
 ├── src/crossdomain/
 │   ├── loaders.py             # leitura YOLO/VOC/COCO/CSV/ABOShips unificada
 │   ├── profiling.py           # perfil estrutural + distância composta
-│   └── prepare.py             # conversão YOLO + splits disjuntos
+│   ├── prepare.py             # conversão YOLO + splits disjuntos
+│   └── synth.py               # composição sintética in-place (SAM)
 ├── scripts/
 │   ├── 00_download.py         # download das fontes (Colab)
 │   ├── 01_profile.py          # Passo Zero (perfil + figuras)  [CPU]
@@ -80,6 +81,6 @@ SMD (Prasad et al., 2017). CITRA-3D-Real é operacional e restrito.
 
 - [x] Passo Zero (perfil estrutural + atribuição de papéis)
 - [x] Fase 1 (splits disjuntos + manifesto)
-- [ ] Composição sintética in-place (crops SAM do ABOShips)
+- [x] Composição sintética in-place (crops SAM do ABOShips)
 - [ ] Fase de treino (braços B2 / C-pre / C-joint / A′joint) — requer
       autorização do supervisor

@@ -30,3 +30,10 @@ prepare:
   drive_out: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/_splits
   val_frac: 0.15
   seed: 42
+
+# Fase 2 — composição sintética in-place (crops SAM do ABOShips)
+synth:
+  aboships_split: /content/cross_domain/aboships   # split disjunto da Fase 1
+  crops_dir: /content/cross_domain/crops_abo       # crops RGBA (estágio 1, GPU)
+  synth_dir: /content/cross_domain/synth_abo       # imagens sintéticas (estágio 2)
+  n_variations: 13                                  # paridade com o artigo
