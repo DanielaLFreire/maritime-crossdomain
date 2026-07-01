@@ -146,6 +146,37 @@ def extract_crops(images_labels_dirs: List[Tuple[str, str]], out_dir: str,
     return manifest
 
 
+def filter_crops(crops_dir: str, min_opacity: float = 0.20,
+                 min_side: int = 24) -> dict:
+    """Limpeza pós-segmentação: remove crops 'magros' (máscara ocupa pouco da
+    bbox -> muito fundo transparente) ou minúsculos. Roda sobre os PNGs já
+    gerados, sem re-executar o SAM. CPU.
+
+    min_opacity: fração mínima de pixels opacos (alpha>127) na bbox.
+    min_side:    lado mínimo do crop em px.
+    Retorna manifesto (antes/removidos/restantes) e o grava ao lado dos crops."""
+    crops = glob.glob(os.path.join(crops_dir, "*.png"))
+    antes = len(crops)
+    removidos = 0
+    for p in crops:
+        try:
+            im = Image.open(p)
+            a = np.array(im)
+            opac = float((a[..., 3] > 127).mean()) if a.ndim == 3 and a.shape[2] == 4 else 1.0
+            if opac < min_opacity or min(im.size) < min_side:
+                os.remove(p); removidos += 1
+        except Exception:  # noqa: BLE001
+            os.remove(p); removidos += 1  # arquivo ilegível também sai
+    manifest = {"antes": antes, "removidos": removidos, "restantes": antes - removidos,
+                "min_opacity": min_opacity, "min_side": min_side,
+                "pct_removido": round(100 * removidos / max(antes, 1), 1)}
+    with open(os.path.join(crops_dir, "_filter_manifest.json"), "w") as f:
+        json.dump(manifest, f, indent=2)
+    print(f"[filter] antes {antes} | removidos {removidos} "
+          f"({manifest['pct_removido']}%) | restantes {manifest['restantes']}")
+    return manifest
+
+
 # ---------------------------------------------------------------------------
 # estágio 2 — composição in-place (CPU)
 # ---------------------------------------------------------------------------

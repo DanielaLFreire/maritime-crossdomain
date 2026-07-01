@@ -43,3 +43,5 @@ synth:
     cov_max: 0.95      # cobertura máxima
     aspect_min: 0.2    # razão de aspecto mínima
     aspect_max: 8.0    # razão de aspecto máxima
+    min_opacity: 0.20  # (limpeza pós-hoc) fração mínima de pixels opacos na bbox
+    min_side: 24       # (limpeza pós-hoc) lado mínimo do crop em px
