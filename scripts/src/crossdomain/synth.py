@@ -27,7 +27,7 @@ SAM_URL = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
 
 # filtro de qualidade (valores do artigo)
 COV_MIN, COV_MAX = 0.25, 0.95
-MIN_DIM = 50
+MIN_DIM = 20
 ASPECT_MIN, ASPECT_MAX = 0.2, 8.0
 
 
@@ -76,15 +76,21 @@ def _largest_cc(mask: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 def extract_crops(images_labels_dirs: List[Tuple[str, str]], out_dir: str,
                   sam_checkpoint: str, device: str = "cuda",
+                  min_dim: int = MIN_DIM, cov_min: float = COV_MIN,
+                  cov_max: float = COV_MAX, aspect_min: float = ASPECT_MIN,
+                  aspect_max: float = ASPECT_MAX,
                   drop_prefixes: Tuple[str, ...] = ()) -> dict:
     """Segmenta cada bbox com SAM e salva crops RGBA filtrados.
 
     images_labels_dirs: lista de (images_dir, labels_dir) — p.ex. o split
-    ABOShips/train. out_dir: pasta dos crops. Retorna manifesto (contagens)."""
+    ABOShips/train. out_dir: pasta dos crops. Filtros de qualidade
+    parametrizáveis (min_dim, cobertura, aspect). Retorna manifesto."""
     import torch  # noqa: F401
     from segment_anything import SamPredictor, sam_model_registry
 
     os.makedirs(out_dir, exist_ok=True)
+    print(f"[filtros] min_dim={min_dim}px | cobertura {cov_min:.2f}-{cov_max:.2f} "
+          f"| aspect {aspect_min}-{aspect_max}")
     sam = sam_model_registry["vit_b"](checkpoint=sam_checkpoint).to(device)
     predictor = SamPredictor(sam)
 
@@ -113,12 +119,12 @@ def extract_crops(images_labels_dirs: List[Tuple[str, str]], out_dir: str,
                 sub = mask[y0:y1, x0:x1]
                 cov = float(sub.mean()) if sub.size else 0.0
                 # filtro de qualidade
-                if not (COV_MIN <= cov <= COV_MAX):
+                if not (cov_min <= cov <= cov_max):
                     dropped += 1; continue
-                if min(bw, bh) < MIN_DIM:
+                if min(bw, bh) < min_dim:
                     dropped += 1; continue
                 ar = bw / bh
-                if not (ASPECT_MIN <= ar <= ASPECT_MAX):
+                if not (aspect_min <= ar <= aspect_max):
                     dropped += 1; continue
                 # crop RGBA
                 rgba = np.zeros((bh, bw, 4), dtype=np.uint8)
@@ -131,7 +137,9 @@ def extract_crops(images_labels_dirs: List[Tuple[str, str]], out_dir: str,
                 print(f"   ...{i+1}/{len(txts)} imgs | crops {kept} | descartados {dropped}")
 
     manifest = {"crops": kept, "dropped": dropped,
-                "yield": round(kept / max(kept + dropped, 1), 3)}
+                "yield": round(kept / max(kept + dropped, 1), 3),
+                "filters": {"min_dim": min_dim, "cov_min": cov_min, "cov_max": cov_max,
+                            "aspect_min": aspect_min, "aspect_max": aspect_max}}
     with open(os.path.join(out_dir, "_crops_manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
     print(f"[crops] {kept} salvos | {dropped} descartados | yield {manifest['yield']:.1%}")

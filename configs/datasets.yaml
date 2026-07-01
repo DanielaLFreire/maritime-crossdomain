@@ -34,6 +34,12 @@ prepare:
 # Fase 2 — composição sintética in-place (crops SAM do ABOShips)
 synth:
   aboships_split: /content/cross_domain/aboships   # split disjunto da Fase 1
-  crops_dir: /content/cross_domain/crops_abo       # crops RGBA (estágio 1, GPU)
-  synth_dir: /content/cross_domain/synth_abo       # imagens sintéticas (estágio 2)
+  crops_dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/crops_abo       # crops RGBA (estágio 1, GPU)
+  synth_dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/synth_abo       # imagens sintéticas (estágio 2)
   n_variations: 13                                  # paridade com o artigo
+  filters:                                          # filtro de qualidade dos crops SAM
+    min_dim: 20        # dim mínima (px). 20 acomoda a menor escala do ABOShips
+    cov_min: 0.25      # cobertura mínima da máscara na bbox
+    cov_max: 0.95      # cobertura máxima
+    aspect_min: 0.2    # razão de aspecto mínima
+    aspect_max: 8.0    # razão de aspecto máxima
