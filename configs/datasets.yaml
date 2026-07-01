@@ -1,0 +1,32 @@
+# Configuração do experimento cross-domain (caminhos e parâmetros).
+# Ajuste os caminhos ao seu Drive/Colab. Nada de caminhos hardcoded no código.
+
+eval_size: 640          # lado maior após letterbox (convenção do artigo)
+small_px: 1024          # limiar COCO para "small" (32*32) após reescala
+
+reference: CITRA-3D-Real
+
+datasets:
+  CITRA-3D-Real:
+    dir: /content/drive/MyDrive/PROJETO_MARINHA/Datasets/CITRA-3D-Real
+    fmt: yolo
+  SMD on-shore:
+    dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_Dataset_Similar/smd_clean
+    fmt: yolo
+  SeaShips:
+    dir: /content/datasets/SeaShips
+    fmt: voc
+  ABOShips:
+    dir: /content/datasets/ABOships
+    fmt: aboships
+    img_w: 1280
+    img_h: 720
+    drop: [seamark, miscellaneous]
+
+# Fase 1 — preparação de dados / splits
+prepare:
+  citra_dir: /content/drive/MyDrive/PROJETO_MARINHA/Datasets/CITRA-3D-Real
+  out: /content/cross_domain
+  drive_out: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/_splits
+  val_frac: 0.15
+  seed: 42

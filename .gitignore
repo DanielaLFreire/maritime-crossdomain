@@ -1,0 +1,42 @@
+# ---- Dados e pesos (NUNCA subir ao git) ----
+datasets/
+data/
+*.zip
+*.tar
+*.tar.gz
+*.pt
+*.pth
+*.onnx
+*.engine
+runs/
+cross_domain/
+_zips/
+_passo_zero/
+_splits/
+
+# imagens de datasets (mantenha só figuras de docs, se quiser)
+*.jpg
+*.jpeg
+!docs/**/*.png        # permite figuras versionadas em docs/
+!docs/**/*.jpg
+
+# ---- Segredos ----
+kaggle.json
+*.key
+.env
+*credentials*
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+build/
+dist/
+
+# ---- SO / editor ----
+.DS_Store
+.idea/
+.vscode/
