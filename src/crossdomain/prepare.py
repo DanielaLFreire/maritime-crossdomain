@@ -163,15 +163,23 @@ def split_ids(ids: List[str], val_frac: float, seed: int) -> Tuple[set, set]:
     return set(ids[n_val:]), set(ids[:n_val])   # (train, val)
 
 
-def write_yamls(out: str, citra_dir: str):
+def write_yamls(out: str, citra_dir: str, synth_images: str = "/content/synth_abo"):
     yamls = {
-        "citra_aboships_joint.yaml":
+        "citra.yaml":                 # baseline / avaliação (test via split)
+            f"train: {citra_dir}/train/images\nval: {citra_dir}/val/images\n"
+            f"test: {citra_dir}/test/images\nnc: 1\nnames: [vessel]\n",
+        "citra_aboships_joint.yaml":  # C-joint: CITRA + ABOShips real
             f"train:\n  - {citra_dir}/train/images\n  - {out}/aboships/train/images\n"
-            f"val: {citra_dir}/val/images\nnc: 1\nnames: [vessel]\n",
-        "aboships_pretrain.yaml":
+            f"val: {citra_dir}/val/images\ntest: {citra_dir}/test/images\n"
+            f"nc: 1\nnames: [vessel]\n",
+        "aboships_pretrain.yaml":     # C-pre: pré-treino só ABOShips
             f"train: {out}/aboships/train/images\nval: {out}/aboships/val/images\n"
             f"nc: 1\nnames: [vessel]\n",
-        "seaships_heldout.yaml":
+        "citra_synth_joint.yaml":     # A'joint+ABO: CITRA (real) + sintético
+            f"train:\n  - {citra_dir}/train/images\n  - {synth_images}/train/images\n"
+            f"val: {citra_dir}/val/images\ntest: {citra_dir}/test/images\n"
+            f"nc: 1\nnames: [vessel]\n",
+        "seaships_heldout.yaml":      # avaliação zero-shot
             f"train: {out}/seaships_heldout/images\nval: {out}/seaships_heldout/images\n"
             f"nc: 1\nnames: [vessel]\n",
     }

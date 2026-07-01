@@ -45,3 +45,10 @@ synth:
     aspect_max: 8.0    # razão de aspecto máxima
     min_opacity: 0.20  # (limpeza pós-hoc) fração mínima de pixels opacos na bbox
     min_side: 24       # (limpeza pós-hoc) lado mínimo do crop em px
+
+# Fase 3 — treino dos braços (GPU)
+train:
+  project: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/runs
+  coco_weights: yolo11m.pt
+  yamls: /content/cross_domain/yamls          # data.yaml gerados na Fase 1
+  synth_images: /content/synth_abo            # sintéticas extraídas (do zip)
