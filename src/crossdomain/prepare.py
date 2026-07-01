@@ -163,6 +163,32 @@ def split_ids(ids: List[str], val_frac: float, seed: int) -> Tuple[set, set]:
     return set(ids[n_val:]), set(ids[:n_val])   # (train, val)
 
 
+def write_balanced_trainlist(citra_images: str, synth_images: str,
+                             out_txt: str, repeat_real: int = 13) -> dict:
+    """Gera lista de treino balanceada para o braço joint (fiel ao artigo):
+    imagens reais do CITRA repetidas `repeat_real`x + sintéticas 1x, de modo a
+    ficar ~50/50. Aponte o `train:` do data.yaml para este .txt.
+
+    Retorna contagens (real, sintetico) para conferência com o artigo
+    (17.524 + 17.524 = 35.048)."""
+    reais = [p for p in glob.glob(os.path.join(citra_images, "*"))
+             if p.lower().endswith(IMG_EXT)]
+    sint = [p for p in glob.glob(os.path.join(synth_images, "*"))
+            if p.lower().endswith(IMG_EXT)]
+    os.makedirs(os.path.dirname(out_txt), exist_ok=True)
+    with open(out_txt, "w") as f:
+        for _ in range(repeat_real):
+            for p in reais:
+                f.write(p + "\n")
+        for p in sint:
+            f.write(p + "\n")
+    counts = {"real": len(reais) * repeat_real, "sintetico": len(sint),
+              "total": len(reais) * repeat_real + len(sint)}
+    print(f"[trainlist] real {counts['real']} + sintético {counts['sintetico']} "
+          f"= {counts['total']} -> {out_txt}")
+    return counts
+
+
 def write_yamls(out: str, citra_dir: str, synth_images: str = "/content/synth_abo"):
     yamls = {
         "citra.yaml":                 # baseline / avaliação (test via split)
@@ -175,8 +201,8 @@ def write_yamls(out: str, citra_dir: str, synth_images: str = "/content/synth_ab
         "aboships_pretrain.yaml":     # C-pre: pré-treino só ABOShips
             f"train: {out}/aboships/train/images\nval: {out}/aboships/val/images\n"
             f"nc: 1\nnames: [vessel]\n",
-        "citra_synth_joint.yaml":     # A'joint+ABO: CITRA (real) + sintético
-            f"train:\n  - {citra_dir}/train/images\n  - {synth_images}/train/images\n"
+        "citra_synth_joint.yaml":     # A'joint+ABO: lista balanceada 13x real + sintético
+            f"train: {out}/yamls/joint_trainlist.txt\n"
             f"val: {citra_dir}/val/images\ntest: {citra_dir}/test/images\n"
             f"nc: 1\nnames: [vessel]\n",
         "seaships_heldout.yaml":      # avaliação zero-shot
