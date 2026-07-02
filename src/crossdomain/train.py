@@ -53,7 +53,7 @@ def train_arm(arm: str, cfg: dict, seed: int) -> dict:
     elif arm == "A_joint_ABO":    # COCO -> CITRA + sintético (50/50, real 13x)
         from . import prepare
         prepare.write_balanced_trainlist(
-            f"{citra}/train/images", f"{sc['synth_images']}/train/images",
+            f"{citra}/train/images", f"{tr['synth_images']}/train/images",
             f"{yamls}/joint_trainlist.txt", repeat_real=sc.get("n_variations", 13))
         best = _train(f"{yamls}/citra_synth_joint.yaml", coco, 300, 30, seed,
                       project, name)
