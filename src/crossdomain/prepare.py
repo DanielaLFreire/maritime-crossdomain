@@ -74,7 +74,8 @@ def prepare_aboships(root: str, out: str, train_seqs: set, val_seqs: set,
                 boxes.append((min(max(cx, 0), 1), min(max(cy, 0), 1), min(w, 1), min(h, 1)))
             if not boxes:
                 continue
-            _link(ip, f"{out}/aboships/{split}/images/{stem}.jpg")
+            ext = os.path.splitext(ip)[1] or ".jpg"
+            _link(ip, f"{out}/aboships/{split}/images/{stem}{ext}")
             _write_label(f"{out}/aboships/{split}/labels", stem, boxes)
             counts[split] += 1
     return counts
@@ -189,6 +190,45 @@ def write_balanced_trainlist(citra_images: str, synth_images: str,
     return counts
 
 
+def build_citra_singleclass(citra_dir: str, out: str,
+                            labels_src: str = "labels_single_class") -> str:
+    """Monta CITRA classe única em {out}/citra_sc/{split}/{images,labels}.
+
+    IMPORTANTE: o Ultralytics infere o caminho dos labels trocando '/images/'
+    por '/labels/' no caminho REAL da imagem. Se symlinkarmos a PASTA images
+    para o Drive, ele procura labels no Drive (multi-classe!). Por isso aqui:
+      - images/: symlink ARQUIVO A ARQUIVO (aponta p/ a imagem real no Drive)
+      - labels/: CÓPIA real dos labels_single_class (lado a lado, sem resolver
+        para o Drive). Assim o Ultralytics lê os labels corretos (classe 0)."""
+    base = f"{out}/citra_sc"
+    for split in ("train", "val", "test"):
+        img_dst = f"{base}/{split}/images"
+        lbl_dst = f"{base}/{split}/labels"
+        for d in (img_dst, lbl_dst):
+            if os.path.islink(d):
+                os.remove(d)
+            elif os.path.isdir(d):
+                shutil.rmtree(d)
+        os.makedirs(img_dst, exist_ok=True)
+        os.makedirs(lbl_dst, exist_ok=True)
+
+        img_real = f"{citra_dir}/{split}/images"
+        lbl_real = f"{citra_dir}/{split}/{labels_src}"
+        if not os.path.isdir(img_real):
+            raise RuntimeError(f"não existe: {img_real}")
+        if not os.path.isdir(lbl_real):
+            raise RuntimeError(f"não existe: {lbl_real} (confira labels_src)")
+
+        for p in glob.glob(f"{img_real}/*"):
+            os.symlink(p, f"{img_dst}/{os.path.basename(p)}")
+        for p in glob.glob(f"{lbl_real}/*.txt"):
+            shutil.copy(p, f"{lbl_dst}/{os.path.basename(p)}")
+
+    print(f"[citra_sc] classe única em {base} "
+          f"(images symlink + labels={labels_src} copiados)")
+    return base
+
+
 def write_yamls(out: str, citra_dir: str, synth_images: str = "/content/synth_abo"):
     yamls = {
         "citra.yaml":                 # baseline / avaliação (test via split)
@@ -214,27 +254,6 @@ def write_yamls(out: str, citra_dir: str, synth_images: str = "/content/synth_ab
         open(f"{out}/yamls/{name}", "w").write(txt)
     return list(yamls)
 
-def build_citra_singleclass(citra_dir: str, out: str,
-                            labels_src: str = "labels_single_class") -> str:
-    """Monta CITRA classe única em {out}/citra_sc/{split}/{images,labels},
-    ligando images/ do Drive e labels_single_class/ como labels/."""
-    base = f"{out}/citra_sc"
-    for split in ("train", "val", "test"):
-        os.makedirs(f"{base}/{split}", exist_ok=True)
-        pares = [("images", f"{citra_dir}/{split}/images"),
-                 ("labels", f"{citra_dir}/{split}/{labels_src}")]
-        for sub, real in pares:
-            dst = f"{base}/{split}/{sub}"
-            if os.path.islink(dst) or os.path.exists(dst):
-                if os.path.islink(dst):
-                    os.remove(dst)
-                else:
-                    shutil.rmtree(dst)
-            if not os.path.isdir(real):
-                raise RuntimeError(f"não existe: {real} (confira labels_src)")
-            os.symlink(real, dst)
-    print(f"[citra_sc] classe única em {base} (labels = {labels_src})")
-    return base
 
 def write_manifest(drive_out: str, manifest: dict):
     os.makedirs(drive_out, exist_ok=True)
