@@ -36,7 +36,7 @@ def train_arm(arm: str, cfg: dict, seed: int) -> dict:
     """Treina UM braço com UM seed. Retorna métricas do teste do CITRA."""
     from ultralytics import YOLO
 
-    tr = cfg["train"]; sc = cfg["synth"]; citra = cfg["prepare"]["citra_dir"]
+    tr = cfg["train"]; sc = cfg["synth"]; citra = cfg["prepare"].get("citra_local", "/content/cross_domain/citra_sc")
     project = tr["project"]; coco = tr.get("coco_weights", "yolo11m.pt")
     yamls = tr["yamls"]           # pasta com os data.yaml gerados na Fase 1
     name = f"{arm}_seed{seed}"

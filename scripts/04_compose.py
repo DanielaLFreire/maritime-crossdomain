@@ -30,7 +30,7 @@ def main():
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config))
-    sc = cfg["synth"]; citra = cfg["prepare"]["citra_dir"]
+    sc = cfg["synth"]; citra = cfg["prepare"].get("citra_local", "/content/cross_domain/citra_sc")
     crops = sc["crops_dir"]; nvar = sc.get("n_variations", 13)
     local = args.local                 # geração local (rápida)
     drive_dir = sc["synth_dir"]        # destino final no Drive (será zipado)

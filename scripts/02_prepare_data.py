@@ -69,7 +69,9 @@ def main():
     path = prepare.write_manifest(pc["drive_out"], manifest)
     print(f"  manifesto: {path}")
 
-    yamls = prepare.write_yamls(out, pc["citra_dir"])
+    citra_sc = prepare.build_citra_singleclass(
+        pc["citra_dir"], out, labels_src=pc.get("citra_labels", "labels_single_class"))
+    yamls = prepare.write_yamls(out, citra_sc, synth_images=cfg["train"]["synth_images"])
     print(f"  data.yaml: {yamls} (confira o caminho do CITRA)")
 
     print("\n=== RESUMO ===")

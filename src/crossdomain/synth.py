@@ -215,7 +215,10 @@ def compose_inplace(citra_images: str, citra_labels: str, crops_dir: str,
             scene.save(os.path.join(out_images, f"{stem}_v{k}.jpg"), quality=95)
             # label herdado (idêntico ao original)
             with open(os.path.join(out_labels, f"{stem}_v{k}.txt"), "w") as f:
-                f.write(open(txt).read())
+                for line in open(txt):
+                    p = line.split()
+                    if len(p) >= 5:
+                        f.write("0 " + " ".join(p[1:5]) + "\n")
             n_out += 1
     print(f"[compose] {n_out} imagens sintéticas geradas em {out_images}")
     return n_out

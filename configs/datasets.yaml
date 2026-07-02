@@ -29,6 +29,8 @@ prepare:
   out: /content/cross_domain
   drive_out: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/_splits
   val_frac: 0.15
+  citra_labels: labels_single_class
+  citra_local: /content/cross_domain/citra_sc
   seed: 42
 
 # Fase 2 — composição sintética in-place (crops SAM do ABOShips)

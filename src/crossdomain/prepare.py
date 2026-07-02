@@ -214,6 +214,27 @@ def write_yamls(out: str, citra_dir: str, synth_images: str = "/content/synth_ab
         open(f"{out}/yamls/{name}", "w").write(txt)
     return list(yamls)
 
+def build_citra_singleclass(citra_dir: str, out: str,
+                            labels_src: str = "labels_single_class") -> str:
+    """Monta CITRA classe única em {out}/citra_sc/{split}/{images,labels},
+    ligando images/ do Drive e labels_single_class/ como labels/."""
+    base = f"{out}/citra_sc"
+    for split in ("train", "val", "test"):
+        os.makedirs(f"{base}/{split}", exist_ok=True)
+        pares = [("images", f"{citra_dir}/{split}/images"),
+                 ("labels", f"{citra_dir}/{split}/{labels_src}")]
+        for sub, real in pares:
+            dst = f"{base}/{split}/{sub}"
+            if os.path.islink(dst) or os.path.exists(dst):
+                if os.path.islink(dst):
+                    os.remove(dst)
+                else:
+                    shutil.rmtree(dst)
+            if not os.path.isdir(real):
+                raise RuntimeError(f"não existe: {real} (confira labels_src)")
+            os.symlink(real, dst)
+    print(f"[citra_sc] classe única em {base} (labels = {labels_src})")
+    return base
 
 def write_manifest(drive_out: str, manifest: dict):
     os.makedirs(drive_out, exist_ok=True)
