@@ -18,18 +18,31 @@ import os
 from typing import Dict, List
 
 HP = dict(optimizer="AdamW", lr0=0.001, lrf=0.01, cos_lr=True,
-          momentum=0.937, weight_decay=0.0005, warmup_epochs=3,
-          imgsz=640, batch=16)
+          momentum=0.937, weight_decay=0.0005,
+          warmup_epochs=3.0, warmup_momentum=0.8, warmup_bias_lr=0.01,
+          imgsz=640, batch=16, cache=True, deterministic=True)
 SEEDS = (42, 123, 2024)
 
 
 def _train(data: str, weights: str, epochs: int, patience: int, seed: int,
            project: str, name: str, freeze: int = 0):
+    """Treina um estágio. Se um run com esse nome já tem last.pt (sessão caiu no
+    meio), RETOMA de onde parou (resume=True) em vez de recomeçar."""
     from ultralytics import YOLO
-    model = YOLO(weights)
-    model.train(data=data, epochs=epochs, patience=patience, seed=seed,
-                project=project, name=name, exist_ok=True, freeze=freeze, **HP)
-    return os.path.join(project, name, "weights", "best.pt")
+    last = os.path.join(project, name, "weights", "last.pt")
+    best = os.path.join(project, name, "weights", "best.pt")
+    if os.path.exists(best) and not os.path.exists(last):
+        return best  # já concluído
+    if os.path.exists(last):
+        print(f"[resume] retomando {name} de {last}")
+        model = YOLO(last)
+        model.train(resume=True)
+    else:
+        model = YOLO(weights)
+        model.train(data=data, epochs=epochs, patience=patience, seed=seed,
+                    project=project, name=name, exist_ok=True, freeze=freeze,
+                    save_period=10, **HP)
+    return best
 
 
 def train_arm(arm: str, cfg: dict, seed: int) -> dict:
