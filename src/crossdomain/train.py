@@ -69,13 +69,29 @@ def _is_resumable(last_pt: str) -> bool:
 
 
 def train_arm(arm: str, cfg: dict, seed: int) -> dict:
-    """Treina UM braço com UM seed. Retorna métricas do teste do CITRA."""
+    """Treina UM braço com UM seed. Retorna métricas do teste do CITRA.
+    Treina em disco LOCAL (Drive via FUSE não suporta as escritas atômicas do
+    Ultralytics — Errno 95). O 05_train sincroniza o resultado para o Drive."""
+    import shutil
     from ultralytics import YOLO
 
-    tr = cfg["train"]; sc = cfg["synth"]; citra = cfg["prepare"].get("citra_local", "/content/cross_domain/citra_sc")
-    project = tr["project"]; coco = tr.get("coco_weights", "yolo11m.pt")
-    yamls = tr["yamls"]           # pasta com os data.yaml gerados na Fase 1
+    tr = cfg["train"]; sc = cfg["synth"]
+    citra = cfg["prepare"].get("citra_local", "/content/cross_domain/citra_sc")
+    project = tr.get("project_local", "/content/runs_local")   # LOCAL (rápido)
+    drive_project = tr["project"]                              # Drive (destino)
+    coco = tr.get("coco_weights", "yolo11m.pt")
+    yamls = tr["yamls"]
     name = f"{arm}_seed{seed}"
+
+    # restaura run parcial do Drive (permite resume após queda de sessão)
+    drive_run = os.path.join(drive_project, name)
+    local_run = os.path.join(project, name)
+    if os.path.isdir(drive_run) and not os.path.isdir(local_run):
+        try:
+            shutil.copytree(drive_run, local_run)
+            print(f"[restore] {name} restaurado do Drive para resume local")
+        except Exception:  # noqa: BLE001
+            pass
 
     if arm == "B2":               # baseline COCO -> CITRA
         best = _train(f"{yamls}/citra.yaml", coco, 300, 30, seed, project, name)
