@@ -26,23 +26,46 @@ SEEDS = (42, 123, 2024)
 
 def _train(data: str, weights: str, epochs: int, patience: int, seed: int,
            project: str, name: str, freeze: int = 0):
-    """Treina um estágio. Se um run com esse nome já tem last.pt (sessão caiu no
-    meio), RETOMA de onde parou (resume=True) em vez de recomeçar."""
+    """Treina um estágio. Retoma de last.pt SÓ se for um checkpoint válido e
+    incompleto (tem estado de época/otimizador). Caso contrário treina do zero."""
     from ultralytics import YOLO
-    last = os.path.join(project, name, "weights", "last.pt")
-    best = os.path.join(project, name, "weights", "best.pt")
-    if os.path.exists(best) and not os.path.exists(last):
-        return best  # já concluído
-    if os.path.exists(last):
+    import torch
+    run_dir = os.path.join(project, name)
+    last = os.path.join(run_dir, "weights", "last.pt")
+    best = os.path.join(run_dir, "weights", "best.pt")
+
+    # já concluído? (best existe e não há treino incompleto pendente)
+    if os.path.exists(best) and not _is_resumable(last):
+        print(f"[skip] {name} já concluído (best.pt presente)")
+        return best
+
+    if _is_resumable(last):
         print(f"[resume] retomando {name} de {last}")
-        model = YOLO(last)
-        model.train(resume=True)
-    else:
-        model = YOLO(weights)
-        model.train(data=data, epochs=epochs, patience=patience, seed=seed,
-                    project=project, name=name, exist_ok=True, freeze=freeze,
-                    save_period=10, **HP)
+        YOLO(last).train(resume=True)
+        return best
+
+    # treino novo — remove run parcial/órfão para não confundir o Ultralytics
+    if os.path.exists(run_dir):
+        import shutil as _sh
+        _sh.rmtree(run_dir, ignore_errors=True)
+    YOLO(weights).train(data=data, epochs=epochs, patience=patience, seed=seed,
+                        project=project, name=name, exist_ok=True, freeze=freeze,
+                        save_period=10, **HP)
     return best
+
+
+def _is_resumable(last_pt: str) -> bool:
+    """True se last.pt é um checkpoint de treino incompleto (retomável):
+    contém 'train_args' e época salva < épocas totais."""
+    if not os.path.exists(last_pt):
+        return False
+    try:
+        import torch
+        ck = torch.load(last_pt, map_location="cpu", weights_only=False)
+        ep = ck.get("epoch", -1)
+        return isinstance(ck, dict) and "train_args" in ck and ep is not None and ep >= 0
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def train_arm(arm: str, cfg: dict, seed: int) -> dict:
