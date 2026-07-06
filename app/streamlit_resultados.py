@@ -135,15 +135,22 @@ if f"ΔmAP50_vs_{BASELINE}" in agg:
     show[f"Δ mAP50 vs {BASELINE}"] = agg[f"ΔmAP50_vs_{BASELINE}"]
     show[f"Δ recall vs {BASELINE}"] = agg[f"Δrecall_vs_{BASELINE}"]
 
-st.dataframe(
-    show.style.format({m: "{:.4f}" for m in METRICS
-                       if m in show.columns})
-        .background_gradient(subset=["mAP50"], cmap="Greens"),
-    use_container_width=True, hide_index=True)
+# tabela sem styler (compatível com qualquer versão de pandas/streamlit)
+show_fmt = show.copy()
+for m in METRICS:
+    if m in show_fmt.columns:
+        show_fmt[m] = show_fmt[m].map(lambda v: f"{v:.4f}")
+for c in show_fmt.columns:
+    if c.startswith("Δ"):
+        show_fmt[c] = show_fmt[c].map(lambda v: f"{v:+.4f}")
+try:
+    st.dataframe(show_fmt, use_container_width=True, hide_index=True)
+except TypeError:
+    st.table(show_fmt)
 
 c1, c2 = st.columns(2)
-c1.bar_chart(agg.set_index("arm")[["mAP50_mean"]], y_label="mAP50")
-c2.bar_chart(agg.set_index("arm")[["recall_mean"]], y_label="Recall")
+c1.bar_chart(agg.set_index("arm")[["mAP50_mean"]])
+c2.bar_chart(agg.set_index("arm")[["recall_mean"]])
 
 # leitura automática do veredito
 if BASELINE in agg["arm"].values:
@@ -174,7 +181,7 @@ for run in sel:
     if not d.empty and col in d.columns:
         curves[run] = d.set_index("epoch")[col]
 if curves:
-    st.line_chart(pd.DataFrame(curves), y_label=metric_key)
+    st.line_chart(pd.DataFrame(curves))
 else:
     st.info("Sem curvas por época para os runs selecionados "
             "(procuro results.csv dentro de cada <arm>_seed<seed>/).")
