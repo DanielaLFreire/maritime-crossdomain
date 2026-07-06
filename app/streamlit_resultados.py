@@ -18,8 +18,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Cross-Domain · Resultados", layout="wide")
 
-DEFAULT_RUNS = ("/content/drive/MyDrive/PROJETO_MARINHA/"
-                "Experimento_CrossDomain/runs")
+DEFAULT_RUNS = "results"   # pasta local com results_final_3seeds.csv
 BASELINE = "B2"          # braço de referência para os deltas
 METRICS = ["mAP50", "mAP50_95", "precision", "recall"]
 
@@ -27,11 +26,17 @@ METRICS = ["mAP50", "mAP50_95", "precision", "recall"]
 # ---------------------------------------------------------------- carregamento
 @st.cache_data(show_spinner=False)
 def load_summary(runs_dir: str) -> pd.DataFrame:
-    """results.csv agregado (uma linha por braço/seed), escrito pelo 05_train."""
-    p = os.path.join(runs_dir, "results_final.csv")
-    if not os.path.exists(p):
-        p = os.path.join(runs_dir, "results.csv")
-    if not os.path.exists(p):
+    """Carrega o CSV agregado (uma linha por braço/seed).
+    Aceita: um caminho .csv direto, OU uma pasta com um dos nomes conhecidos
+    (results_final_3seeds.csv, results_final.csv, results.csv)."""
+    if runs_dir.endswith(".csv"):
+        candidatos = [runs_dir]
+    else:
+        candidatos = [os.path.join(runs_dir, n) for n in
+                      ("results_final_3seeds.csv", "results_final.csv",
+                       "results.csv")]
+    p = next((c for c in candidatos if os.path.exists(c)), None)
+    if p is None:
         return pd.DataFrame()
     df = pd.read_csv(p)
     df = df.drop_duplicates(subset=["arm", "seed"], keep="last")
@@ -61,12 +66,54 @@ def agg_mean_std(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------- sidebar
-st.sidebar.title("Configuração")
-runs_dir = st.sidebar.text_input("Pasta de runs", DEFAULT_RUNS)
-st.sidebar.caption("Aponte para a pasta que contém results.csv e os "
-                   "subdiretórios <arm>_seed<seed>/.")
+import glob as _glob
 
-summary = load_summary(runs_dir)
+st.sidebar.title("Configuração")
+st.sidebar.markdown("**1. Pasta de resultados**")
+results_dir = st.sidebar.text_input(
+    "Caminho da pasta com os CSVs de resultados",
+    value=DEFAULT_RUNS,
+    placeholder="/home/usuario/maritime-crossdomain/results")
+
+# lista todos os CSVs da pasta (novos experimentos aparecem aqui)
+csvs = sorted(_glob.glob(os.path.join(results_dir, "*.csv"))) \
+    if os.path.isdir(results_dir) else []
+
+if not os.path.isdir(results_dir):
+    st.sidebar.error(f"Pasta não encontrada:\n`{results_dir}`")
+    summary = pd.DataFrame()
+elif not csvs:
+    st.sidebar.warning(f"Nenhum arquivo .csv em `{results_dir}`.")
+    summary = pd.DataFrame()
+else:
+    nomes = [os.path.basename(c) for c in csvs]
+    st.sidebar.success(f"{len(csvs)} arquivo(s) encontrado(s):")
+    st.sidebar.write("\n".join(f"- {n}" for n in nomes))
+    combinar = st.sidebar.checkbox(
+        "Combinar todos", value=False,
+        help="Une todos os CSVs da pasta (um por experimento) numa visão só.")
+    if combinar:
+        dfs = []
+        for c in csvs:
+            d = pd.read_csv(c)
+            d["_arquivo"] = os.path.basename(c)
+            dfs.append(d)
+        summary = pd.concat(dfs, ignore_index=True) \
+            .drop_duplicates(subset=["arm", "seed"], keep="last")
+    else:
+        escolha = st.sidebar.selectbox("Visualizar arquivo", nomes,
+                                       index=len(nomes) - 1)
+        summary = load_summary(os.path.join(results_dir, escolha))
+
+# pasta de runs (curvas/detecções) — separada, costuma ficar no Drive
+st.sidebar.markdown("**2. Pasta de runs** (opcional)")
+runs_dir = st.sidebar.text_input(
+    "Caminho dos runs (curvas por época e detecções)",
+    value="",
+    placeholder="/content/drive/.../Experimento_CrossDomain/runs")
+st.sidebar.caption("A tabela de resultados vem da pasta de resultados (item 1). "
+                   "Curvas por época e detecções precisam dos runs "
+                   "(subdiretórios <arm>_seed<seed>/), normalmente no Drive.")
 
 st.title("Aumento Cross-Domain do CITRA-3D — Resultados")
 st.caption("Fonte primária: ABOShips (distância estrutural 0,95 ao CITRA-3D). "
