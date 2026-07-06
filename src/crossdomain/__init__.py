@@ -6,7 +6,7 @@ Submódulos:
   profiling  — perfil estrutural e distância composta ao domínio-alvo
   prepare    — conversão YOLO + splits disjuntos por origem
 """
-from . import loaders, prepare, profiling, synth  # noqa: F401
+from . import loaders, prepare, profiling, synth, train  # noqa: F401
 
-__all__ = ["loaders", "profiling", "prepare", "synth"]
+__all__ = ["loaders", "profiling", "prepare", "synth", "train"]
 __version__ = "0.1.0"

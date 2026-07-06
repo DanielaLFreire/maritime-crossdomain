@@ -36,8 +36,13 @@ def main():
     # crops vêm do split TRAIN do ABOShips (disjunto), preparado na Fase 1
     pairs = [(f"{sc['aboships_split']}/train/images",
               f"{sc['aboships_split']}/train/labels")]
+    f = sc.get("filters", {})
     print(f"Extraindo crops de {pairs[0][0]} -> {out}")
-    synth.extract_crops(pairs, out, args.sam, device=args.device)
+    synth.extract_crops(
+        pairs, out, args.sam, device=args.device,
+        min_dim=f.get("min_dim", 20),
+        cov_min=f.get("cov_min", 0.25), cov_max=f.get("cov_max", 0.95),
+        aspect_min=f.get("aspect_min", 0.2), aspect_max=f.get("aspect_max", 8.0))
 
 
 if __name__ == "__main__":

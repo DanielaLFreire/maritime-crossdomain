@@ -29,8 +29,8 @@ prepare:
   out: /content/cross_domain
   drive_out: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/_splits
   val_frac: 0.15
-  citra_labels: labels_single_class
-  citra_local: /content/cross_domain/citra_sc
+  citra_labels: labels_single_class   # pasta de labels classe única do CITRA
+  citra_local: /content/cross_domain/citra_sc   # CITRA classe única montado (symlinks)
   seed: 42
 
 # Fase 2 — composição sintética in-place (crops SAM do ABOShips)
@@ -51,6 +51,7 @@ synth:
 # Fase 3 — treino dos braços (GPU)
 train:
   project: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/runs
+  project_local: /content/runs_local   # treina local (Drive FUSE quebra escrita atômica)
   coco_weights: yolo11m.pt
   yamls: /content/cross_domain/yamls          # data.yaml gerados na Fase 1
   synth_images: /content/synth_abo            # sintéticas extraídas (do zip)

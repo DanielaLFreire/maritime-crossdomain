@@ -108,6 +108,15 @@ Colapsar todas as anotações para a classe única `vessel`, **idêntico** ao qu
 ### 5.4 Anti-vazamento
 Congelar todos os splits **antes** de qualquer geração sintética. Nenhuma imagem/anotação/fundo de teste (CITRA-3D, SMD-test, held-out) pode entrar em qualquer etapa de treino, validação ou geração de crops.
 
+### 5.5 Implementação — decisões e adaptações (registro para reprodutibilidade)
+
+Adaptações feitas durante a implementação, com justificativa. As duas primeiras são adaptações metodológicas assumidas no texto; a ablação (50 vs. 20 px) fica como *future work*.
+
+- **Dimensão mínima de crop reduzida de 50 → 20 px.** 66,3% das caixas do ABOShips têm lado menor < 50 px (mediana 34 px); o filtro original (calibrado para os navios grandes do InaTechShips) descartaria dois terços dos crops. A redução é coerente com a menor escala da fonte e com o domínio-alvo (CITRA, embarcações minúsculas). Efeito: *yield* de extração 25,8% → 62,8% (18.420 crops).
+- **Filtro de opacidade pós-segmentação** (passo novo). Remove crops cuja máscara SAM cobre < 20% da bbox ou com lado < 24 px — ruído mais frequente em embarcações pequenas. Removeu 13,0% (2.389 de 18.405), restando **16.016 crops limpos**.
+- **Composição fiel ao artigo:** 13 variações × CITRA(train+val) = 21.840 sintéticas; joint balanceado 17.524 real (×13) + 17.524 sintético = 35.048 imgs/época (50/50).
+- **Provisão de labels:** os labels operacionais de classe única do CITRA-3D residem em `labels_single_class/` (o diretório `labels/` contém rótulos multi-classe legados); o pipeline usa exclusivamente os de classe única. Detalhes de formato do ABOShips (imagens PNG; CSV com dimensões de bbox, não da imagem; exclusão de `seamark`/`miscellaneous`) documentados no repositório.
+
 ---
 
 ## 6. Passo zero — perfil estrutural (sem treinar)
@@ -197,6 +206,28 @@ Para C-joint e os A′joint, manter o regime balanceado 50/50 do artigo. Se o ta
 
 ---
 
+## 8.5 Resultados obtidos — experimento núcleo (A′joint+ABO)
+
+Executado com 3 seeds (42, 123, 2024), teste in-domain do CITRA-3D (401 imagens),
+protocolo idêntico ao artigo (YOLOv11m, COCO→CITRA, AdamW, 300 ep, patience 30).
+
+| Braço | mAP50 | mAP50-95 | Recall |
+|---|---|---|---|
+| B2 (baseline) | 0,8315 ± 0,0029 | 0,4995 ± 0,0074 | 0,7795 ± 0,0080 |
+| **A′joint+ABO** | **0,8384 ± 0,0023** | **0,5108 ± 0,0016** | **0,7946 ± 0,0016** |
+| **Δ** | **+0,69 pp** | **+1,13 pp** | **+1,51 pp** |
+
+**Leitura dos resultados:**
+- **A′joint+ABO supera o B2 nos três seeds** (Δ mAP50 = +1,38, +0,46, +0,22 pp) — ganho consistente, não artefato de um seed.
+- O **desvio-padrão do braço aumentado é menor** que o do baseline (±0,0023 vs. ±0,0029), indicando maior **estabilidade** além da média.
+- **B2 reproduz o baseline do artigo** (0,8315 ≈ 0,835), validando a fidelidade do pipeline e a justiça da comparação.
+- Ganho concentrado em **Recall (+1,51 pp)** sem perda de Precision — aumento "limpo", operacionalmente relevante para vigilância (menos embarcações não-detectadas sem inflar falsos positivos).
+- **Comparação com o artigo original:** A′joint com InaTechShips (distância ≫) rendeu +1,00 pp mAP50; A′joint+ABO com ABOShips (distância 0,95) rende +0,69 pp mAP50 mas +1,51 pp de Recall. Com o caso positivo (fonte próxima ajuda) somado ao caso negativo já publicado (fonte distante causa transferência negativa), obtêm-se **dois pontos ancorando a curva preditora** (§H4): a compatibilidade estrutural, não a similaridade visual, prediz a utilidade da fonte.
+
+*Nota de convergência:* o braço joint treina com 35.048 imagens/época (13× o B2) e converge em ~12–15 épocas (early stopping ~42–45), pois cada época é ~13× mais rica em dados. Comportamento esperado.
+
+---
+
 ## 9. Mapeamento hipótese → resultado esperado → uso no artigo
 
 | Hipótese | Resultado que confirma | Onde entra no artigo |
@@ -233,15 +264,21 @@ Cenários **negativos também são publicáveis**: se C-joint/C-pre falharem ape
 
 ---
 
-## 12. Decisões pendentes e próximos passos
+## 12. Estado atual e próximos passos
 
-1. **Autorização do Cmte. Moreira** — mudar o papel do SMD altera o caminho de publicação; decisão de supervisão antes de comprometer compute.
-2. **Escolha do held-out não-SMD** — definir entre SeaShips e ABOShips após o profiling do §6.
-3. **Inclusão do ponto on-board** na curva H4 (opcional; decide-se após gate).
-4. **Número de seeds** (3 vs. 5) nos braços-chave.
-5. **Licenciamento/citação** — citar SMD original (Prasad et al., 2017) e a fonte do held-out; não citar os re-uploads do Roboflow.
+**Concluído:**
+- ✅ Passo zero (perfil estrutural) — papéis definidos por distância; autorização do Cmte. Moreira obtida.
+- ✅ Splits disjuntos (§5) + composição sintética (SAM/ABOShips).
+- ✅ **Experimento núcleo (§8.5):** B2 vs. A′joint+ABO, 3 seeds — A′joint+ABO supera o baseline consistentemente (+0,69 pp mAP50, +1,51 pp Recall).
 
-**Sequência recomendada:** §6 (profiling, gate) → fixar held-out → preparar splits §5 → rodar B2-ref/C-pre/C-joint → avaliar H1/H2 → A′joint+ABO (H3) → C-all (entregável) → curva H4 → consolidar para o artigo.
+**Próximos passos (ordem de valor):**
+1. **C-pre e C-joint** (H1/H2) — testam ABOShips real (pré-treino / co-treino sem síntese); populam os pontos intermediários da curva H4. Requerem ABOShips extraído.
+2. **Avaliação zero-shot no held-out** (SeaShips) — mede generalização; requer o VOC com anotações (Annotations/XML).
+3. **Curva H4** — consolidar Δ-transferência × distância (ABOShips 0,95; SMD 1,84; InaTechShips ≫) na figura-síntese.
+4. **5 seeds** nos braços-chave, se o compute permitir.
+5. **Licenciamento/citação** — SMD (Prasad et al., 2017), ABOShips (Zenodo, CC BY 4.0), InaTechShips (Teixeira et al., Ocean Engineering 2025); não citar re-uploads do Roboflow.
+
+**Sequência:** núcleo ✅ → C-pre/C-joint (H1/H2) → held-out (generalização) → curva H4 → consolidar artigo.
 
 ---
 
