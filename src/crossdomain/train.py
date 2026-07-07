@@ -24,12 +24,35 @@ HP = dict(optimizer="AdamW", lr0=0.001, lrf=0.01, cos_lr=True,
 SEEDS = (42, 123, 2024)
 
 
+def _sync_run_to_drive(run_dir: str):
+    """Copia um run (pesos, results.csv, plots) do disco local para o Drive
+    imediatamente após concluir. Cópia simples de arquivos — compatível com o
+    FUSE do Drive (ao contrário das escritas atômicas do Ultralytics). Protege
+    contra perda de modelo se a sessão cair antes do sync do fim do lote."""
+    drive_project = _DRIVE_PROJECT[0]
+    if not drive_project:
+        return
+    name = os.path.basename(run_dir)
+    dst = os.path.join(drive_project, name)
+    try:
+        import shutil
+        os.makedirs(drive_project, exist_ok=True)
+        shutil.copytree(run_dir, dst, dirs_exist_ok=True)
+        print(f"[sync] {name} -> Drive (imediato)")
+    except Exception as e:  # noqa: BLE001
+        print(f"[sync] aviso: falha ao sincronizar {name}: {e}")
+
+
+# destino Drive p/ o sync imediato (setado por train_arm a cada braço)
+_DRIVE_PROJECT = [None]
+
+
 def _train(data: str, weights: str, epochs: int, patience: int, seed: int,
            project: str, name: str, freeze: int = 0):
     """Treina um estágio. Retoma de last.pt SÓ se for um checkpoint válido e
-    incompleto (tem estado de época/otimizador). Caso contrário treina do zero."""
+    incompleto (tem estado de época/otimizador). Caso contrário treina do zero.
+    Sincroniza o run ao Drive imediatamente ao terminar."""
     from ultralytics import YOLO
-    import torch
     run_dir = os.path.join(project, name)
     last = os.path.join(run_dir, "weights", "last.pt")
     best = os.path.join(run_dir, "weights", "best.pt")
@@ -42,6 +65,7 @@ def _train(data: str, weights: str, epochs: int, patience: int, seed: int,
     if _is_resumable(last):
         print(f"[resume] retomando {name} de {last}")
         YOLO(last).train(resume=True)
+        _sync_run_to_drive(run_dir)
         return best
 
     # treino novo — remove run parcial/órfão para não confundir o Ultralytics
@@ -51,6 +75,7 @@ def _train(data: str, weights: str, epochs: int, patience: int, seed: int,
     YOLO(weights).train(data=data, epochs=epochs, patience=patience, seed=seed,
                         project=project, name=name, exist_ok=True, freeze=freeze,
                         save_period=10, **HP)
+    _sync_run_to_drive(run_dir)
     return best
 
 
@@ -79,6 +104,7 @@ def train_arm(arm: str, cfg: dict, seed: int) -> dict:
     citra = cfg["prepare"].get("citra_local", "/content/cross_domain/citra_sc")
     project = tr.get("project_local", "/content/runs_local")   # LOCAL (rápido)
     drive_project = tr["project"]                              # Drive (destino)
+    _DRIVE_PROJECT[0] = drive_project                          # habilita sync imediato
     coco = tr.get("coco_weights", "yolo11m.pt")
     yamls = tr["yamls"]
     name = f"{arm}_seed{seed}"
