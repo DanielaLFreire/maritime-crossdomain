@@ -73,3 +73,17 @@ Atualizado enquanto o experimento roda.
 - vs artigo original: A'joint (InaTech, d≫) deu +1.00 pp; A_joint_ABO (ABOShips, d=0,95)
   deu +0.69 pp mAP50 mas +1.51 pp recall. Dois pontos da curva estrutural
   (próximo ajuda / distante atrapalha) sustentam a tese "estrutura prediz transferência".
+
+## Terminologia — cadeia de transfer learning (para o texto do artigo)
+Cada braço é uma cadeia de treinos sequenciais partindo de pesos prévios.
+Convenção adotada (alinhada à literatura):
+- **B2** (baseline): COCO (pré-treino base) → **fine-tune** CITRA-3D (300 ép).
+- **C-pre** (H1): COCO → **pré-treino** ABOShips (100 ép) → **fine-tune** CITRA-3D (300 ép).
+  Três elos: COCO (base de fábrica) → ABOShips (pré-treino de domínio) → CITRA (fine-tune alvo).
+- **C-joint** (H2): COCO → fine-tune conjunto CITRA-3D + ABOShips real (300 ép).
+- **A_joint_ABO** (H3): COCO → fine-tune conjunto CITRA-3D + sintético-ABOShips (300 ép).
+
+Nota: "pré-treino" reservado ao estágio intermediário (ABOShips); "fine-tune" ao
+estágio final no alvo (CITRA). O COCO é sempre a base pré-treinada de fábrica.
+As 300 épocas finais no CITRA são idênticas em todos os braços — isola o efeito
+da fonte/estratégia, não do número de épocas.
