@@ -87,3 +87,60 @@ Nota: "pré-treino" reservado ao estágio intermediário (ABOShips); "fine-tune"
 estágio final no alvo (CITRA). O COCO é sempre a base pré-treinada de fábrica.
 As 300 épocas finais no CITRA são idênticas em todos os braços — isola o efeito
 da fonte/estratégia, não do número de épocas.
+
+## Resultados C-pre / C-joint (seed 42) — ABOShips REAL vs sintético
+Teste CITRA-3D (401 imgs), seed 42:
+| Braço | ABOShips via | mAP50 | Recall | Δ mAP50 vs B2 |
+|---|---|---|---|---|
+| B2 (baseline) | — | 0,8275 | 0,7682 | — |
+| A_joint_ABO | sintético | 0,8413 | 0,7955 | **+1,38 pp** |
+| C-joint | real (co-treino) | 0,8298 | 0,7674 | +0,23 pp |
+| C-pre | real (pré-treino) | 0,8275 | 0,7650 | +0,00 pp |
+
+**Achado central:** o ABOShips só gera ganho substancial quando entra via
+**síntese domain-adapted** (A_joint_ABO). Como dados REAIS — pré-treino (C-pre)
+ou co-treino (C-joint) — o ganho é nulo/marginal, e o recall fica ABAIXO do
+baseline. Refina a tese: proximidade estrutural é NECESSÁRIA (ABOShips funciona,
+InaTech distante não) mas NÃO SUFICIENTE — a adaptação de domínio via composição
+in-place é o ingrediente crítico. Justifica a contribuição metodológica (síntese)
+sobre "apenas adicionar mais dados reais".
+PENDENTE: seeds 123, 2024 de C-pre/C-joint para mean±std (atual n=1).
+
+## SeaShips (held-out para generalização) — fonte das anotações
+Problema: a cópia no Drive tinha só JPEGImages (7000 JPGs, 0 XMLs).
+Fonte oficial COM anotações VOC (Shao et al., 2018 — usar esta, não Roboflow):
+- WHU (direto): http://www.lmars.whu.edu.cn/prof_web/shaozhenfeng/datasets/SeaShips(7000).zip
+- Repo: github.com/jiaming-wang/SeaShips | Baidu: pan.baidu.com/s/1iQ-JG-4JhyBkdUFwIclprg (senha 986Z)
+Estrutura: JPEGImages/ + Annotations/ (XMLs) + ImageSets/. O prepare_seaships_heldout
+converte VOC→YOLO classe única. Apontar configs SeaShips.dir para a pasta completa.
+Citação: Shao et al., IEEE Trans. Multimedia 20(10):2593-2604, 2018.
+
+### SeaShips — atualização: WHU falhou, usar Roboflow
+O link direto da WHU retorna página de erro (~53KB HTML, servidor instável).
+Via que funciona no Colab — Roboflow API (formato VOC com XMLs):
+  rf.workspace("ships-tznqe").project("seaships7000-yxbuv").version(1).download("voc")
+Requer API key grátis (roboflow.com). Roboflow é só o MEIO de obtenção;
+CITAR a fonte original Shao et al. 2018 (não o re-upload).
+
+### SeaShips — RESOLVIDO
+Baixado via Roboflow (ships-tznqe/seaships7000-yxbuv, formato VOC): 6.979 imagens
+com XMLs. Salvo no Drive: Experimento_CrossDomain/SeaShips_voc_completo.
+Apontar configs SeaShips.dir para essa pasta. Conferir se o Roboflow redimensionou
+as imagens (documentar se sim). Citar Shao et al. 2018 (fonte original).
+
+## RESULTADO FINAL — 4 braços × 3 seeds (teste CITRA-3D)
+| Braço | ABOShips via | mAP50 | Recall | Δ mAP50 |
+|---|---|---|---|---|
+| A_joint_ABO | sintético | 0,8384 ± 0,0023 | 0,7946 ± 0,0016 | +0,69 pp |
+| B2 (baseline) | — | 0,8315 ± 0,0029 | 0,7795 ± 0,0080 | — |
+| C-joint | real (co-treino) | 0,8310 ± 0,0009 | 0,7732 ± 0,0042 | −0,05 pp |
+| C-pre | real (pré-treino) | 0,8279 ± 0,0007 | 0,7631 ± 0,0044 | −0,37 pp |
+
+CONFIRMADO com 3 seeds (std ≤ 0,003): só A_joint_ABO (síntese) supera o baseline.
+ABOShips REAL — pré-treino (C-pre) ou co-treino (C-joint) — NÃO ajuda; C-pre chega
+a degradar o recall (−1,64 pp). Ordenamento A_joint_ABO > B2 > C-joint > C-pre
+estável nos 3 seeds. Tese refinada: proximidade estrutural é NECESSÁRIA mas NÃO
+SUFICIENTE; a adaptação de domínio via composição sintética é o ingrediente crítico.
+Hipótese p/ o texto: pré-treino/co-treino com ABOShips real enviesa o modelo para
+embarcações grandes (a escala do ABOShips), degradando o recall nas pequenas do CITRA;
+a síntese in-place preserva a escala/contexto do CITRA, por isso funciona.
