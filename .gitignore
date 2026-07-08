@@ -8,7 +8,6 @@ data/
 *.pth
 *.onnx
 *.engine
-runs/
 cross_domain/
 _zips/
 _passo_zero/
@@ -40,3 +39,9 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# permitir os CSVs de curva em runs/, mas continuar ignorando pesos
+!runs/
+!runs/*.csv
+runs/**/*.pt
+runs/**/*.pth

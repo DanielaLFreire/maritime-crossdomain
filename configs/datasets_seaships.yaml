@@ -1,0 +1,57 @@
+# Configuração do experimento cross-domain (caminhos e parâmetros).
+# Ajuste os caminhos ao seu Drive/Colab. Nada de caminhos hardcoded no código.
+
+eval_size: 640          # lado maior após letterbox (convenção do artigo)
+small_px: 1024          # limiar COCO para "small" (32*32) após reescala
+
+reference: CITRA-3D-Real
+
+datasets:
+  CITRA-3D-Real:
+    dir: /content/drive/MyDrive/PROJETO_MARINHA/Datasets/CITRA-3D-Real
+    fmt: yolo
+  SMD on-shore:
+    dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_Dataset_Similar/smd_clean
+    fmt: yolo
+  SeaShips:
+    dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/SeaShips_voc_completo
+    fmt: voc
+  ABOShips:
+    dir: /content/datasets/ABOships
+    fmt: aboships
+    img_w: 1280
+    img_h: 720
+    drop: [seamark, miscellaneous]
+
+# Fase 1 — preparação de dados / splits
+prepare:
+  citra_dir: /content/drive/MyDrive/PROJETO_MARINHA/Datasets/CITRA-3D-Real
+  out: /content/cross_domain
+  drive_out: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/_splits
+  val_frac: 0.15
+  citra_labels: labels_single_class   # pasta de labels classe única do CITRA
+  citra_local: /content/cross_domain/citra_sc   # CITRA classe única montado (symlinks)
+  seed: 42
+
+# Fase 2 — composição sintética in-place (crops SAM do ABOShips)
+synth:
+  aboships_split: /content/cross_domain/aboships   # split disjunto da Fase 1
+  crops_dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/crops_abo       # crops RGBA (estágio 1, GPU)
+  synth_dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/synth_abo       # imagens sintéticas (estágio 2)
+  n_variations: 13                                  # paridade com o artigo
+  filters:                                          # filtro de qualidade dos crops SAM
+    min_dim: 20        # dim mínima (px). 20 acomoda a menor escala do ABOShips
+    cov_min: 0.25      # cobertura mínima da máscara na bbox
+    cov_max: 0.95      # cobertura máxima
+    aspect_min: 0.2    # razão de aspecto mínima
+    aspect_max: 8.0    # razão de aspecto máxima
+    min_opacity: 0.20  # (limpeza pós-hoc) fração mínima de pixels opacos na bbox
+    min_side: 24       # (limpeza pós-hoc) lado mínimo do crop em px
+
+# Fase 3 — treino dos braços (GPU)
+train:
+  project: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/runs
+  project_local: /content/runs_local   # treina local (Drive FUSE quebra escrita atômica)
+  coco_weights: yolo11m.pt
+  yamls: /content/cross_domain/yamls          # data.yaml gerados na Fase 1
+  synth_images: /content/synth_abo            # sintéticas extraídas (do zip)
