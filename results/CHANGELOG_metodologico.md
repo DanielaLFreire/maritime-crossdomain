@@ -144,3 +144,55 @@ SUFICIENTE; a adaptação de domínio via composição sintética é o ingredien
 Hipótese p/ o texto: pré-treino/co-treino com ABOShips real enviesa o modelo para
 embarcações grandes (a escala do ABOShips), degradando o recall nas pequenas do CITRA;
 a síntese in-place preserva a escala/contexto do CITRA, por isso funciona.
+
+## Figura H4 — interação via×distância (interpretação confirmada com o artigo)
+Ler o artigo original corrigiu a tese. O artigo decompõe o MECANISMO com UMA
+fonte (InaTech, distante): −4,15 (real) → −1,31 (síntese seq) → +1,00 (síntese joint).
+A extensão ABOShips adiciona o EIXO DISTÂNCIA (2ª fonte, próxima 0,95):
+| Fonte | dist | via real (pré-treino) | via síntese joint |
+|---|---|---|---|
+| ABOShips | 0,95 | −0,37 (C-pre) / −0,05 (C-joint) | +0,69 (A_joint_ABO) |
+| InaTech  | ≫    | −4,15 (Arm A, artigo)          | +1,00 (A' joint, artigo) |
+
+ACHADO da extensão: a síntese joint é ROBUSTA à distância (ambas > 0: +0,69 e +1,00);
+o uso de dados reais DEGRADA com a distância (−0,37 perto → −4,15 longe). As duas
+vias divergem conforme a fonte se distancia. Tese: a composição in-place neutraliza
+a distância estrutural; o uso real não. Estende (não contradiz) o artigo — confirma
+que o mecanismo síntese-joint vale variando a fonte, e isola a distância como o que
+governa a severidade do transfer negativo real.
+Fig: docs/fig_h4_interacao.{png,pdf} (gerada por docs/gerar_fig_h4.py).
+NOTA: distância do InaTech plotada como "≫" (sem valor numérico do Passo Zero).
+
+### SeaShips held-out — notas do formato (Roboflow)
+- Imagens REDIMENSIONADAS para 640×640 pelo Roboflow (documentar no artigo:
+  "SeaShips images resized to 640×640 by the distribution source"). O parser lê
+  <size> do XML, então as bboxes convertem corretamente.
+- SeaShips é MULTI-CLASSE (bulk cargo carrier, container ship, etc.);
+  prepare_seaships_heldout colapsa TODAS as classes em classe 0 ("vessel") —
+  correto para a avaliação single-class.
+- Contagem de XMLs (13.120) pode incluir duplicatas do merge train+test com
+  hashes do Roboflow; o parser gera 1 label por imagem válida. Documentar o total
+  real de imagens avaliadas (n do seaships_heldout/labels).
+- Citar Shao et al. 2018 (fonte original), não o Roboflow.
+
+## GENERALIZAÇÃO zero-shot SeaShips (held-out, dist 4,08, 6.979 imgs)
+| Braço | mAP50 | Recall | Δ mAP50 vs B2 |
+|---|---|---|---|
+| C-joint | 0,4395 ± 0,0143 | 0,3872 | +4,75 pp |
+| A_joint_ABO | 0,4184 ± 0,0179 | 0,4445 | +2,63 pp |
+| B2 (baseline) | 0,3920 ± 0,0604 | 0,3781 | — |
+| C-pre | 0,3041 ± 0,0083 | 0,2887 | −8,79 pp |
+
+LEITURA HONESTA (resultado matizado — NÃO force-fit na narrativa in-domain):
+- In-domain (CITRA): A_joint_ABO (síntese) lidera.
+- Zero-shot distante (SeaShips): C-joint (co-treino REAL) ligeiramente à frente do
+  A_joint_ABO; AMBOS superam o B2. A síntese NÃO domina no held-out distante.
+- A_joint_ABO tem o MELHOR RECALL (0,4445) — relevante p/ vigilância.
+- C-pre despenca em ambos (−8,79 aqui) — pré-treino direto prejudica sempre.
+- Variância do B2 alta (±0,0604): consistente com o artigo (SMD: "seed variance grows").
+TESE DEFENSÁVEL: a fonte próxima (ABOShips) ajuda a generalização quando usada de
+forma BALANCEADA (joint), seja síntese ou real — não por pré-treino. A vantagem
+específica da síntese é clara IN-DOMAIN; no held-out muito distante, síntese e
+co-treino real convergem. Reportar honestamente; NÃO afirmar que a síntese sempre vence.
+PENDENTE: discutir com Cmte. Moreira como enquadrar (o C-joint>A_joint no held-out
+é inesperado; pode virar ponto de discussão rico, não fraqueza).
