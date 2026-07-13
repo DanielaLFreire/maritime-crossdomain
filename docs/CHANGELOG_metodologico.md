@@ -219,3 +219,23 @@ CONTRIBUIÇÃO OPERACIONAL (p/ o projeto/Marinha): a estratégia de aumento idea
 DEPENDE DA ESCALA das embarcações no cenário de emprego. Alvo pequeno/distante
 (vigilância longo alcance, tipo CITRA) → síntese in-place. Alvo grande/próximo
 (costeiro, tipo SeaShips) → co-treino com dados reais da fonte. Acionável.
+
+## Distância do InaTechShips — decisão: referência externa (não renormalizar)
+Medimos o perfil do InaTechShips (subconjunto 5k, 800×399, formato YOLO):
+area_med=0,321 (32% da imagem), obj/img=1,0, small=0,0% — bate com a Tabela I
+do artigo (embarcações grandes, single-vessel, ~0% small).
+
+DECISÃO: manter as distâncias oficiais dos 4 datasets do Passo Zero original
+(ABOShips 0,95 < SMD 1,84 < SeaShips 4,08), que já constam no artigo SIBGRAPI.
+NÃO renormalizar incluindo o InaTech (mudaria todos os valores e criaria
+inconsistência com o artigo submetido).
+
+O InaTechShips é tratado como REFERÊNCIA EXTERNA (fonte distante do artigo
+original). Medição de apoio: num cálculo conjunto exploratório, o InaTech ficou
+como o MAIS distante do conjunto (~3,8, acima do SeaShips ~3,0), confirmando
+qualitativamente que é a fonte mais distante — dominado pelos eixos de ESCALA e
+%small (embarcações enormes, ~0% pequenas), exatamente os eixos que a síntese
+in-place corrige. Isso explica por que o InaTech é péssimo por pré-treino (−4,15)
+mas ótimo por síntese joint (+1,00): a síntese ataca justamente onde ele é distante.
+
+Perfil salvo em _passo_zero_v2/ (exploratório, não substitui o Passo Zero oficial).
