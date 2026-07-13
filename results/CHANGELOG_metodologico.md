@@ -196,3 +196,26 @@ específica da síntese é clara IN-DOMAIN; no held-out muito distante, síntese
 co-treino real convergem. Reportar honestamente; NÃO afirmar que a síntese sempre vence.
 PENDENTE: discutir com Cmte. Moreira como enquadrar (o C-joint>A_joint no held-out
 é inesperado; pode virar ponto de discussão rico, não fraqueza).
+
+## HIPÓTESE DE ESCALA — CONFIRMADA (perfil de tamanhos)
+Perfil de área das caixas (% da imagem):
+| Dataset | mediana | small(COCO) | large(COCO) |
+|---|---|---|---|
+| CITRA-3D (operacional) | 0,101% | 31,3% | 18,2% |
+| SeaShips (held-out)    | 3,635% | 4,3%  | 63,2% |
+
+SeaShips tem embarcações ~36× MAIORES (mediana) que o CITRA; distribuição quase
+oposta (CITRA domina small/medium; SeaShips domina large 63%).
+
+MECANISMO (explica o C-joint > A_joint_ABO no held-out):
+- A_joint_ABO (síntese) recompõe crops na escala MINÚSCULA do CITRA → especialista
+  em objetos pequenos → ótimo in-domain, mal-adaptado ao SeaShips (grande).
+- C-joint (ABO real) preserva embarcações grandes reais → generaliza melhor p/
+  SeaShips (63% large).
+TESE: a síntese in-place otimiza para a ESCALA DO ALVO operacional; é vantagem
+in-domain mas custo na generalização p/ domínios de escala diferente.
+
+CONTRIBUIÇÃO OPERACIONAL (p/ o projeto/Marinha): a estratégia de aumento ideal
+DEPENDE DA ESCALA das embarcações no cenário de emprego. Alvo pequeno/distante
+(vigilância longo alcance, tipo CITRA) → síntese in-place. Alvo grande/próximo
+(costeiro, tipo SeaShips) → co-treino com dados reais da fonte. Acionável.
