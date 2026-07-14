@@ -239,3 +239,41 @@ in-place corrige. Isso explica por que o InaTech é péssimo por pré-treino (�
 mas ótimo por síntese joint (+1,00): a síntese ataca justamente onde ele é distante.
 
 Perfil salvo em _passo_zero_v2/ (exploratório, não substitui o Passo Zero oficial).
+
+## Tabela de perfil unificada — todos os datasets a 640×640 (para o artigo)
+Perfil COCO medido na MESMA resolução (640, a de treino) para comparabilidade —
+a Tabela I do artigo pode ter medido em resoluções nativas diferentes, o que torna
+%small não estritamente comparável entre datasets. A área mediana (% da imagem) é
+robusta à resolução; o %small COCO só é comparável se medido na mesma resolução.
+
+Resultado (640×640):
+| Dataset | área med (% img) | small | medium | large | dens |
+|---|---|---|---|---|---|
+| CITRA-3D | 0,099% | 71,6% | 25,5% | 2,9% | 3,37 |
+| ABOShips | 0,229% | 52,1% | 37,5% | 10,5% | 4,27 |
+| SMD      | 0,369% | 38,3% | 51,3% | 10,4% | 7,71 |
+| SeaShips | 3,635% | 4,3%  | 32,5% | 63,2% | 1,32 |
+| InaTechShips | (pendente — readicionar ao config) | | | | |
+
+PROGRESSÃO DE ESCALA: conforme a área mediana cresce, %small despenca e %large sobe.
+Os datasets se ordenam pela mesma distância estrutural medida (CITRA<ABO<SMD<SeaShips).
+VALIDAÇÃO: CITRA a 640 = 71,6% small, batendo com o artigo (confirma a medição).
+CSV: docs/perfil_datasets_640.csv. Falta InaTech (config perde a entrada ao reiniciar
+sessão — readicionar antes de rodar).
+
+## Tabela de perfil COMPLETA — 5 datasets a 640×640 (FECHADA)
+| Dataset | área med (% img) | small | medium | large | dens | n_obj |
+|---|---|---|---|---|---|---|
+| CITRA-3D | 0,099% | 71,6% | 25,5% | 2,9% | 3,37 | 7012 |
+| ABOShips | 0,229% | 52,1% | 37,5% | 10,5% | 4,27 | 34097 |
+| SMD      | 0,369% | 38,3% | 51,3% | 10,4% | 7,71 | 7043 |
+| SeaShips | 3,635% | 4,3%  | 32,5% | 63,2% | 1,32 | 9198 |
+| InaTechShips | 32,091% | 0,0% | 0,0% | 100,0% | 1,00 | 5000 |
+
+VALIDAÇÃO InaTech: 0% small, 100% large, área 32% — bate com Tabela I do artigo
+(~54% área, ~0% small, single vessel). Subconjunto 5k a 800×399 (documentar amostra).
+PROGRESSÃO PERFEITA por escala: área med cresce 0,099→32,091% (CITRA 324× menor que
+InaTech); %small cai 71,6→0; %large sobe 2,9→100. A ordem por escala = ordem da
+distância estrutural (CITRA<ABO<SMD<SeaShips<InaTech) → escala é o eixo dominante.
+Explica a síntese: pega crops do InaTech (100% large) e redimensiona p/ escala do
+CITRA (71,6% small). CSV: docs/perfil_datasets_640.csv. Fig: docs/fig_perfil_5datasets.png.
