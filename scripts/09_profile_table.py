@@ -76,9 +76,14 @@ def main():
             print(f"[pulado] {nome}: pasta inexistente ({d['dir']})")
             continue
         print(f"[perfilando] {nome} a {args.res}x{args.res} ...")
-        keep = d.get("keep"); drop = d.get("drop")
-        bb = loaders.auto_load(d["dir"], fmt=d.get("fmt", "auto"),
-                               keep=keep, drop=drop)
+        # só passa keep/drop se o config os define (senão usa o default da função:
+        # drop=frozenset(), evitando 'NoneType is not iterable')
+        kwargs = {"fmt": d.get("fmt", "auto")}
+        if d.get("keep") is not None:
+            kwargs["keep"] = d["keep"]
+        if d.get("drop") is not None:
+            kwargs["drop"] = d["drop"]
+        bb = loaders.auto_load(d["dir"], **kwargs)
         p = perfil_dataset(bb, args.res)
         p["dataset"] = nome
         rows.append(p)
