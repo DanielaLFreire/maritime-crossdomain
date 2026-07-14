@@ -22,6 +22,11 @@ datasets:
     img_w: 1280
     img_h: 720
     drop: [seamark, miscellaneous]
+  InaTechShips:
+    dir: "/content/drive/MyDrive/PROJETO_MARINHA/Experimento YOLOStarLS-adapted/Datasets/InaTechShips"
+    fmt: yolo
+    img_w: 800
+    img_h: 399
 
 # Fase 1 — preparação de dados / splits
 prepare:
