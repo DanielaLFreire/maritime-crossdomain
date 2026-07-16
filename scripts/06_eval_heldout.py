@@ -46,7 +46,11 @@ def main():
               "SeaShips.dir apontando para a pasta VOC (com XMLs).")
         return
 
-    rows = []
+    # acumula com avaliações já existentes (não sobrescreve braços anteriores)
+    out_csv = os.path.join(runs, "results_heldout_seaships.csv")
+    rows = pd.read_csv(out_csv).to_dict("records") if os.path.exists(out_csv) else []
+    rows = [r for r in rows
+            if not (r["arm"] in args.arms and r["seed"] in args.seeds)]
     for arm in args.arms:
         for seed in args.seeds:
             best = os.path.join(runs, f"{arm}_seed{seed}", "weights", "best.pt")
@@ -70,14 +74,13 @@ def main():
         return
 
     df = pd.DataFrame(rows).sort_values(["arm", "seed"])
-    out_csv = os.path.join(runs, "results_heldout_seaships.csv")
     df.to_csv(out_csv, index=False)
 
     # resumo mean±std por braço + delta vs B2
     print("\n=== ZERO-SHOT SeaShips (mean ± std) ===")
     summ = {}
     base = None
-    for arm in args.arms:
+    for arm in sorted(df.arm.unique(), key=lambda a: (a != "B2", a)):
         sub = df[df.arm == arm]
         if sub.empty:
             continue

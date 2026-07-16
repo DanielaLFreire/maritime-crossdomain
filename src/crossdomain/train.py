@@ -128,13 +128,25 @@ def train_arm(arm: str, cfg: dict, seed: int) -> dict:
     elif arm == "C-joint":        # COCO -> CITRA + ABOShips real (joint)
         best = _train(f"{yamls}/citra_aboships_joint.yaml", coco, 300, 30, seed,
                       project, name)
-    elif arm == "A_joint_ABO":    # COCO -> CITRA + sintético (50/50, real 13x)
+    elif arm.startswith("A_joint_"):  # COCO -> CITRA + sintético (50/50, real 13x)
         from . import prepare
-        prepare.write_balanced_trainlist(
-            f"{citra}/train/images", f"{tr['synth_images']}/train/images",
-            f"{yamls}/joint_trainlist.txt", repeat_real=sc.get("n_variations", 13))
-        best = _train(f"{yamls}/citra_synth_joint.yaml", coco, 300, 30, seed,
-                      project, name)
+        tag = arm[len("A_joint_"):].lower()          # 'abo', 'inatech', 'both', ...
+        if tag == "abo":                             # caminho original (intocado)
+            synth_images = tr["synth_images"]
+            trainlist = f"{yamls}/joint_trainlist.txt"
+            data = f"{yamls}/citra_synth_joint.yaml"
+        else:                                        # fontes novas (Fase 1 multi-fonte)
+            synth_images = tr.get(f"synth_images_{tag}", f"/content/synth_{tag}")
+            trainlist = f"{yamls}/joint_trainlist_{tag}.txt"
+            data = f"{yamls}/citra_synth_{tag}_joint.yaml"
+            open(data, "w").write(
+                f"train: {trainlist}\nval: {citra}/val/images\n"
+                f"test: {citra}/test/images\nnc: 1\nnames: [vessel]\n")
+        counts = prepare.write_balanced_trainlist(
+            f"{citra}/train/images", f"{synth_images}/train/images",
+            trainlist, repeat_real=sc.get("n_variations", 13))
+        print(f"[trainlist] {arm}: real={counts['real']} sint={counts['sintetico']}")
+        best = _train(data, coco, 300, 30, seed, project, name)
     else:
         raise ValueError(f"braço desconhecido: {arm}")
 

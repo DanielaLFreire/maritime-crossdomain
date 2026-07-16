@@ -21,7 +21,7 @@ import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from crossdomain import train  # noqa: E402
 
-ALL_ARMS = ["B2", "C-pre", "C-joint", "A_joint_ABO"]
+ALL_ARMS = ["B2", "C-pre", "C-joint", "A_joint_ABO", "A_joint_InaTech"]
 
 
 def _sync_to_drive(local_run, drive_run):

@@ -59,4 +59,5 @@ train:
   project_local: /content/runs_local   # treina local (Drive FUSE quebra escrita atômica)
   coco_weights: yolo11m.pt
   yamls: /content/cross_domain/yamls          # data.yaml gerados na Fase 1
-  synth_images: /content/synth_abo            # sintéticas extraídas (do zip)
+  synth_images: /content/synth_abo            # sintéticas ABO extraídas (do zip)
+  synth_images_inatech: /content/synth_inatech  # sintéticas InaTech (Fase 1)
