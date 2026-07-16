@@ -23,7 +23,7 @@ datasets:
     img_h: 720
     drop: [seamark, miscellaneous]
   InaTechShips:
-    dir: "/content/drive/MyDrive/PROJETO_MARINHA/Experimento YOLOStarLS-adapted/Datasets/InaTechShips"
+    dir: /content/drive/MyDrive/PROJETO_MARINHA/Datasets/InaTechShips
     fmt: yolo
     img_w: 800
     img_h: 399
@@ -42,7 +42,7 @@ prepare:
 synth:
   aboships_split: /content/cross_domain/aboships   # split disjunto da Fase 1
   crops_dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/crops_abo       # crops RGBA (estágio 1, GPU)
-  synth_dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/synth_abo       # imagens sintéticas (estágio 2)
+  synth_dir: /content/drive/MyDrive/PROJETO_MARINHA/Datasets/_zips/synth_abo               # sintéticas (estágio 2; vira synth_abo.zip; o 08 salva synth_<tag>.zip na mesma pasta)
   n_variations: 13                                  # paridade com o artigo
   filters:                                          # filtro de qualidade dos crops SAM
     min_dim: 20        # dim mínima (px). 20 acomoda a menor escala do ABOShips

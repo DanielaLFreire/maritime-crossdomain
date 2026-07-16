@@ -135,6 +135,36 @@ curvas de treino por época e visualizador de detecções (amostras em
   `docs/CHANGELOG_metodologico.md`.
 - Treino em disco local + sync ao Drive (FUSE quebra escrita atômica — Errno 95).
 
+## Organização dos dados no Drive
+
+Convenção: **todo zip de dados vive em `Datasets/_zips`** — fontes públicas,
+crops SAM e sintéticas. Zips são o formato preferido no Drive (1 arquivo →
+FUSE rápido e à prova de queda); pastas soltas só para dados lidos in-place.
+Os scripts `04_compose.py` e `08_compose_multisource.py` salvam `synth_*.zip`
+em `_zips` automaticamente (via `synth.synth_dir` do config), e o
+`tools/colab_setup_sessao.py` extrai os zips necessários a cada sessão.
+
+```
+PROJETO_MARINHA/
+├── Datasets/
+│   ├── CITRA-3D-Real/               # operacional (pasta; lido in-place)
+│   ├── InaTechShips/                # dataset + crops_sam/ (pasta)
+│   └── _zips/                       # TODOS os zips de dados
+│       ├── ABOships.zip             # fonte (Zenodo)
+│       ├── seaship.zip              # fonte (classificação)
+│       ├── SeaShips_voc.zip         # held-out VOC (contém SeaShips_voc_completo/)
+│       ├── smd_clean.zip            # SMD on-shore limpo
+│       ├── crops_abo.zip            # crops SAM ABOShips (contém crops_abo/)
+│       ├── InaTechShips_crops_sam.zip
+│       ├── synth_abo.zip            # sintéticas ABO (train/, val/ na raiz)
+│       └── synth_inatech.zip        # sintéticas InaTech — Fase 1 (idem)
+├── Experimento_CrossDomain/         # artefatos da campanha: runs/, _splits/, crops_abo/
+└── sam_vit_b_01ec64.pth
+```
+
+Nota de extração: `synth_*.zip` não têm pasta no nível superior — extraia com
+destino explícito (`unzip -q synth_abo.zip -d /content/synth_abo`).
+
 ## Dados e licenças
 
 Datasets não versionados (`.gitignore`). ABOShips (Zenodo 4736931, CC BY 4.0);

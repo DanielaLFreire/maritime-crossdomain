@@ -35,7 +35,7 @@ from crossdomain import synth  # noqa: E402
 # caminhos dos crops por fonte (RGBA, extraídos via SAM)
 CROP_DIRS = {
     "ABO": "/content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/crops_abo",
-    "InaTech": "/content/drive/MyDrive/InaTechShips/crops_sam",
+    "InaTech": "/content/drive/MyDrive/PROJETO_MARINHA/Datasets/InaTechShips/crops_sam",
     # "SMD": "<extrair via SAM antes de usar>",
 }
 

@@ -33,16 +33,21 @@ for name, dest in [("ABOships.zip", "/content/datasets/ABOships"),
     if os.path.exists(z) and not os.listdir(dest):
         with zipfile.ZipFile(z) as zf: zf.extractall(dest)
 
-# 3b) SeaShips VOC — preferir a cópia salva no Drive (detecção, com XML) ---------
-SEA_DRIVE = f"{CROSSD}/SeaShips_voc"
+# 3b) SeaShips VOC — preferir o zip em _zips (1 arquivo = FUSE rápido) -----------
+SEA_ZIP   = f"{ZIPS}/SeaShips_voc.zip"                 # contém SeaShips_voc_completo/
+SEA_DRIVE = f"{CROSSD}/SeaShips_voc_completo"          # fallback: pasta no Drive
 SEA_LOCAL = "/content/datasets/SeaShips"
-if os.path.isdir(SEA_DRIVE):
-    subprocess.run(["cp", "-r", SEA_DRIVE, SEA_LOCAL])
-    print("SeaShips VOC copiado do Drive.")
-else:
-    print("[ATENÇÃO] SeaShips VOC não está no Drive. Rebaixe do Roboflow e salve:")
-    print("  rf...download('voc', location='/content/datasets/SeaShips')")
-    print(f"  !cp -r /content/datasets/SeaShips {SEA_DRIVE}")
+if not os.path.isdir(SEA_LOCAL):
+    if os.path.exists(SEA_ZIP):
+        with zipfile.ZipFile(SEA_ZIP) as zf: zf.extractall("/content/datasets")
+        os.rename("/content/datasets/SeaShips_voc_completo", SEA_LOCAL)
+        print("SeaShips VOC extraído do zip.")
+    elif os.path.isdir(SEA_DRIVE):
+        subprocess.run(["cp", "-r", SEA_DRIVE, SEA_LOCAL])
+        print("SeaShips VOC copiado do Drive (pasta).")
+    else:
+        print("[ATENÇÃO] SeaShips VOC não está no Drive. Rebaixe do Roboflow e salve:")
+        print(f"  !cp -r /content/datasets/SeaShips {SEA_DRIVE}")
 
 # 4) SAM checkpoint — do Drive, senão baixa ------------------------------------
 SAM = f"{REPO}/sam_vit_b_01ec64.pth"
@@ -54,14 +59,21 @@ elif not os.path.exists(SAM):
         "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"])
     subprocess.run(["cp", SAM, SAM_DRIVE]); print("SAM baixado e salvo no Drive.")
 
-# 5) crops SAM — se já existem no Drive, traz de volta (pula estágio 1) ----------
+# 5) crops SAM — preferir o zip em _zips; senão a pasta do Drive -----------------
+CROPS_ZIP   = f"{ZIPS}/crops_abo.zip"                  # contém crops_abo/
 CROPS_DRIVE = f"{CROSSD}/crops_abo"
 CROPS_LOCAL = "/content/cross_domain/crops_abo"
-if os.path.isdir(CROPS_DRIVE):
+if not os.path.isdir(CROPS_LOCAL):
     os.makedirs("/content/cross_domain", exist_ok=True)
-    subprocess.run(["cp", "-r", CROPS_DRIVE, CROPS_LOCAL])
-    n = len(glob.glob(f"{CROPS_LOCAL}/*.png"))
-    print(f"crops do Drive: {n} PNGs (estágio 1 já feito — pule para composição)")
+    if os.path.exists(CROPS_ZIP):
+        with zipfile.ZipFile(CROPS_ZIP) as zf: zf.extractall("/content/cross_domain")
+        print("crops_abo extraídos do zip.")
+    elif os.path.isdir(CROPS_DRIVE):
+        subprocess.run(["cp", "-r", CROPS_DRIVE, CROPS_LOCAL])
+        print("crops_abo copiados do Drive (pasta).")
+n = len(glob.glob(f"{CROPS_LOCAL}/*.png"))
+if n:
+    print(f"crops locais: {n} PNGs (estágio 1 já feito — pule para composição)")
 
 # 6) refazer splits (rápido; mesmo split via manifesto) -------------------------
 subprocess.run("PYTHONPATH=src python scripts/02_prepare_data.py "
