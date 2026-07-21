@@ -14,7 +14,7 @@ datasets:
     dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_Dataset_Similar/smd_clean
     fmt: yolo
   SeaShips:
-    dir: /content/drive/MyDrive/PROJETO_MARINHA/Experimento_CrossDomain/SeaShips_voc_completo
+    dir: /content/drive/MyDrive/PROJETO_MARINHA/Datasets/SeaShips_voc_completo   # novo
     fmt: voc
   ABOShips:
     dir: /content/datasets/ABOships
